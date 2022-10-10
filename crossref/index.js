@@ -20,6 +20,12 @@ export async function Scopus_list(base_RIEPP, base, inColl, outColl) {
   await Update(Scopus_list, base, outColl);
 }
 
+export async function aggregation(server, base, coll, aggregation) {
+  server == "RIEPP"
+    ? await GetBase_RIEPP(base, coll, aggregation)
+    : await GetBase(base, coll, aggregation);
+}
+
 export async function Test() {
   let test = fs.readFileSync("C:/agri/parsing/crossref/9998.json");
   await Save(JSON.parse(test).items, "crossref", "april2022");
@@ -308,4 +314,53 @@ export async function create_issn_counter() {
     },
   ];
   await GetBase("crossref", "issn", aggregation);
+}
+
+export async function create_issn_counter_RIEEP() {
+  let aggregation = [
+    {
+      $lookup: {
+        from: "slw2022",
+        let: {
+          issn: "$issn",
+          eissn: "$eissn",
+        },
+        pipeline: [
+          { $match: { year: { $gte: "2017" } } },
+          {
+            $match: {
+              $expr: {
+                $or: [
+                  {
+                    $in: ["$issn", "$$issn"],
+                  },
+                  {
+                    $in: ["$eissn", "$$issn"],
+                  },
+                ],
+              },
+            },
+          },
+          {
+            $count: "kol",
+          },
+        ],
+        as: "res",
+      },
+    },
+    {
+      $unwind: "$res",
+    },
+    {
+      $project: {
+        issn: "$issn",
+        kol: "$res.kol",
+      },
+    },
+    {
+      $out: "issn_counter",
+    },
+  ];
+
+  await GetBase_RIEPP("lab", "slw2022", aggregation);
 }

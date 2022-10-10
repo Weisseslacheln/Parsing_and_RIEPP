@@ -49,7 +49,65 @@ import { measure } from "./measure.js";
 
 const asyncFunc = async () => {
   try {
-    crossref.create_issn_counter();
+    let aggr = [
+      {
+        $project: {
+          issn: {
+            $toUpper: "$issn",
+          },
+          eissn: {
+            $toUpper: "$eissn",
+          },
+        },
+      },
+      {
+        $group: {
+          _id: ["$issn", "$eissn"],
+          kol: {
+            $sum: 1,
+          },
+        },
+      },
+      {
+        $project: {
+          _id: "$_id",
+          issn: "$_id",
+          kol: "$kol",
+        },
+      },
+      {
+        $unwind: "$issn",
+      },
+      {
+        $match: {
+          issn: {
+            $ne: "",
+          },
+        },
+      },
+      {
+        $group: {
+          _id: "$_id",
+          issn: {
+            $push: "$issn",
+          },
+          kol: {
+            $first: "$kol",
+          },
+        },
+      },
+      {
+        $project: {
+          _id: "$d",
+          issn: "$issn",
+          kol: "$kol",
+        },
+      },
+      {
+        $out: "issn_counter_from_scopus",
+      },
+    ];
+    crossref.aggregation("RIEPP", "lab", "slw2022", aggr);
     // crossref.match_doi_scopus_crossref("scopus_works_2017");
     // crossref.Test();
     // crossref.Scopus_list("lab", "crossref", "slw2022", "scopus_jurnal");
