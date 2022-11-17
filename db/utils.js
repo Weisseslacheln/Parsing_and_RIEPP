@@ -1,5 +1,6 @@
 import { connectToDatabase } from "./index";
 import { connectToDatabase_RIEPP } from "./index";
+import { connectToDatabase_Home } from "./index";
 
 // base = ["test", "main","crossref"];
 // coll = ["OpenRIRO", "RNF"];
@@ -64,6 +65,33 @@ export async function Update_RIEPP(data, base, coll) {
   } else {
     if (data != {})
       await db_RIEPP[base]
+        .collection(coll)
+        .updateOne({ _id: data._id }, { $set: data }, { upsert: true });
+  }
+}
+
+export async function GetBase_Home(base, coll, aggregates) {
+  const db_Home = await connectToDatabase_Home();
+
+  return aggregates
+    ? await db_Home[base].collection(coll).aggregate(aggregates).toArray()
+    : await db_Home[base].collection(coll).find().toArray();
+}
+
+export async function Update_Home(data, base, coll) {
+  const db_Home = await connectToDatabase_Home();
+
+  if (Array.isArray(data)) {
+    if (data.length != 0)
+      data.map(
+        async (el) =>
+          await db_Home[base]
+            .collection(coll)
+            .updateOne({ _id: el._id }, { $set: el }, { upsert: true })
+      );
+  } else {
+    if (data != {})
+      await db_Home[base]
         .collection(coll)
         .updateOne({ _id: data._id }, { $set: data }, { upsert: true });
   }
